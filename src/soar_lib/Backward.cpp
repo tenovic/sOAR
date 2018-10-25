@@ -355,7 +355,7 @@ double Backward::H_c (double x, double y, int e, int a, int o, int s, int t, dou
 
 double Backward::H_m (double x, double y, int e, int a, int o, int s, int t, double u) {
 	double x_m_val = X_m(x,e,a,o,s,u,t);
-	double y_m_val = Y_m(x,y,o,s,u,t);
+	double y_m_val = Y_m(x,y,e,o,s,u,t);
 	
 	BwStochResultStruct res;
 	Stoch_HMcN(x_m_val, y_m_val, res);
@@ -514,9 +514,9 @@ void Backward::CalcLambdaAndConvergence(NArray<double> &f_old , double lambda_ol
 
 	result.lambda_bw_average = lambda_average;
     result.lambda_bw_worst   = lambda_worst;
-	result.bw_notconv_count = notconv_count;
+	result.bw_notconv_count  = notconv_count;
 	result.bw_state_count    = state_count;
-	result.bw_convergence = lambda_max_delta < _crit;
+	result.bw_convergence    = lambda_max_delta < _crit;
 
 	// For comparison (lambda calculated for particular state)
 	double oldVal     =           f_old(_x_cnt-1,_y_cnt-1,_e_cnt-1,0,0,0,_t_cnt-1);

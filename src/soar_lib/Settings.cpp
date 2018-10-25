@@ -37,7 +37,6 @@ Settings::Settings() {
 	// ======== General settings ======== 
 	_pm.Add(_run_backward,         "RunBackward");
 	_pm.Add(_run_forward,          "RunForward");
-	_pm.Add(_user_init_start_pop,  "UserdefinedInitializationOfStartPopulation", true);	
 	_pm.Add(_enable_migration,     "EnableMigrationOption");
 	_pm.Add(_enable_health_dim,    "EnableHealthDimension");
 
@@ -49,7 +48,6 @@ Settings::Settings() {
 	
 	//-- Forward general settings
 	_pm.Add(_n_fw,                 "ForwardMaximumNumberOfIterations");
-	_pm.Add(_n_min_fw,             "ForwardMinimumNumberOfIterations", true);
 	_pm.Add(_file_prefix_fw,       "ForwardFilePrefix");
 	_pm.Add(_start_week_fw,        "ForwardStartEpoch");      
 	_pm.Add(_start_loc_fw,         "ForwardStartLocation");
@@ -142,7 +140,6 @@ Settings::Settings() {
 	// The special-type optional parameters allow other methods of validation:
 	// - FuncTypes are automatically instantiated to FT_NONE 
 	// - NArrays are empty.
-	_user_init_start_pop   = false;
 	_y_min                 = -1;
 	_y_max                 = -1;
 	_grid_y                = 0;
@@ -153,10 +150,10 @@ Settings::Settings() {
 
 	_p_active_flight_const = -1;
 	_migr_dur              = 0; 
-	_dres_migr_act		   = -1;
-	_dres_migr_pas		   = -1;
-	_dcond_migr_pas		   = -1;
-	_dcond_migr_act		   = -1;
+	//_dres_migr_act		   = -1;
+	//_dres_migr_pas		   = -1;
+	//_dcond_migr_pas		   = -1;
+	//_dcond_migr_act		   = -1;
 	_m_migr                = -1;
 
 	_delta_cond_start      = -1;
@@ -177,10 +174,10 @@ bool Settings::ValidateSettings()
 	if ( !_enable_migration ) {
 		_migr_dur = 1;
 		_m_migr   = 1;
-		_dres_migr_act  = _x_max;
-		_dres_migr_pas  = _x_max;
-		_dcond_migr_act = _y_max;
-		_dcond_migr_pas = _y_max;
+		_dres_migr_act.SetConstant(_x_max);
+		_dres_migr_pas.SetConstant(_x_max);
+		_dcond_migr_act.SetConstant(_y_max);
+		_dcond_migr_pas.SetConstant(_y_max);
 		_m_migr_x_func.SetConstant(0);
 
 		const int checks = 12;
@@ -348,12 +345,12 @@ bool Settings::ValidateSettings()
 	}
 
 	if (_enable_health_dim && _enable_migration) {
-		if (_dcond_migr_act < 0) {
-			printf("Error:  HealthCostsOfActiveFlight (%f) not set larger or equal to zero.", _dcond_migr_act);
+		if (_dcond_migr_act.GetType() == FuncType::FuncTypeVariant::FT_NONE) {
+			printf("Error:  HealthCostsOfActiveFlight needs to be set when migration option is enabled! \n");
 			okay = false;
 		}
-		if (_dcond_migr_pas < 0) {
-			printf("Error:  HealthCostsOfPassiveFlight (%f) not set larger or equal to zero.", _dcond_migr_pas);
+		if (_dcond_migr_pas.GetType() == FuncType::FuncTypeVariant::FT_NONE) {
+			printf("Error:  HealthCostsOfPassiveFlight needs to be set when migration option is enabled! \n");
 			okay = false;
 		}
 	}
@@ -388,12 +385,12 @@ bool Settings::ValidateSettings()
 		if (abs(_m_migr-1) <= 0.0000001) {
 			printf("Warning:  Due to PredationRiskDuringMigration ~= (%f), migration option will never be selected.\n", _m_migr);  
 		}		
-		if (_dres_migr_act < 0) {
-			printf("Error:  ReserveCostsOfActiveFlight (%f) not set larger or equal to zero! \n", _dres_migr_act);
+		if (_dres_migr_act.GetType() == FuncType::FuncTypeVariant::FT_NONE) {
+			printf("Error:  ReserveCostsOfActiveFlight needs to be set when migration option is enabled! \n");
 			okay = false;
 		}
-		if (_dres_migr_pas < 0) {
-			printf("Error:  ReserveCostsOfPassiveFlight (%f) not set larger or equal to zero! \n", _dres_migr_pas);
+		if (_dres_migr_pas.GetType() == FuncType::FuncTypeVariant::FT_NONE) {
+			printf("Error:  ReserveCostsOfPassiveFlight needs to be set when migration option is enabled! \n");
 			okay = false;
 		}
 		if (_m_migr_x_func.GetType() == FuncType::FuncTypeVariant::FT_NONE) { 

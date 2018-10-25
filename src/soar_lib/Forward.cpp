@@ -82,35 +82,6 @@ void   Forward::SavePopulationDynamics(char *filename)
 }
 
 
-bool Forward::LoadFwFromFile(char *filename) 
-{
-	FILE *file = fopen(filename,"rb");
-	if (file==0) {
-		printf("Forward::load_from_file(%s) error opening the file for reading\n",filename);
-		return false;
-	}
-
-	if (!_FW_props.LoadBinary(file) ) {
-		printf("Forward::load_from_file(%s) error file read error on 'FW_props'\n",filename);
-		return false;
-	}
-	
-	fread(&_conv.lambda_fw_average,1,sizeof(double), file); 
-	fread(&_conv.fw_convergence,1,sizeof(bool), file);
-	fread(&_conv.fw_year_conv,1,sizeof(int), file);
-	fread(&_conv.lambda_fw_state,1,sizeof(double), file);
-	fread(&_conv.lambda_fw_worst,1,sizeof(double), file);    
-	fread(&_conv.fw_notconv_count,1,sizeof(int), file);     
-	fread(&_conv.fw_state_count,1,sizeof(int), file);        
-
-	fclose(file);
-
-	_fw_initialized = true;
-
-	return true;
-}
-
-
 
 // grid functions and stochasticity
 
@@ -482,13 +453,10 @@ void Forward::Init(Settings *settings)
 
 	InitStateFuncs(settings, _decision->GetTheta() );
 
-	_conv.fw_convergence = false;
-
-	_user_init_start_pop = settings->GetUserInitStartPop();  
-	_n_fw                = settings->GetNFW();
-	_n_min_fw            = settings->GetNMinFW();
-	_start_week_fw       = settings->GetStartWeekFW();
-	_start_loc_fw        = settings->GetStartLocationFW();
+	_n_fw              = settings->GetNFW();
+	_n_min_fw          = settings->GetNMinFW();
+	_start_week_fw     = settings->GetStartWeekFW();
+	_start_loc_fw      = settings->GetStartLocationFW();
 
 	_t_cnt             = settings->GetTCnt();
 	_n_brood           = settings->GetNBrood();
@@ -528,6 +496,11 @@ void Forward::Init(Settings *settings)
 
 	_x_max            = settings->GetXMax(); // Uses Forward._x_max  not StateFuncs._x_max
 	_e_max            = settings->GetEMax(); // Uses Forward._e_max  not StateFuncs._e_max
+	_dres_migr_act    = settings->DResMigrAct();
+	_dres_migr_pas    = settings->DResMigrPas();
+	_dcond_migr_act   = settings->DCondMigrAct();
+	_dcond_migr_pas   = settings->DCondMigrPas();
+	
 	//---------------------------------------
 	// allocate array for summary statistics
 
@@ -579,6 +552,7 @@ void Forward::CalcLambdaAndConvergence(NArray<double> &FW_props, NArray<double> 
 	double lambda_average = 0;		// Average lambda over all state combinations
 	int    state_count = 0;			// Count of state combinations used for average calcualtion
 	int    notconv_count = 0;
+	int    temp = 0;
 
 	for (unsigned int x=0;x<_x_cnt;x++) {
 		for (unsigned int y=0;y<_y_cnt;y++) {
@@ -586,13 +560,13 @@ void Forward::CalcLambdaAndConvergence(NArray<double> &FW_props, NArray<double> 
 				for (unsigned int a=0;a<_a_cnt;a++)	{
 					for (unsigned int o=0; o<_o_cnt; o++) {
 						for (unsigned int s=0; s<_s_cnt; s++) {
-							for (unsigned int t=0;t<_t_cnt;t++) 
+							for (unsigned int t=0;t<_t_cnt;t++)
 							{
 								double oldVal = FW_old(x,y,e,a,o,s,t);
 								double newVal = FW_props(x,y,e,a,o,s,t);
 
 								if (oldVal > 0)
-								{
+								{																			 
 									double lambda = newVal / oldVal;
 
 									double lambda_delta = fabs(lambda - 1.0);
@@ -630,6 +604,7 @@ void Forward::CalcLambdaAndConvergence(NArray<double> &FW_props, NArray<double> 
 	double oldVal     = FW_old(_x_cnt-1,_y_cnt-1,_e_cnt-1,0,0,0,_t_cnt-1);
 	double newVal     = FW_props(_x_cnt-1,_y_cnt-1,_e_cnt-1,0,0,0,_t_cnt-1);
 	result.lambda_fw_state  = (double) newVal/oldVal;;
+
 }
 
 // ------------------------------------------------------------------------------------------------
@@ -667,45 +642,32 @@ double Forward::ComputePopulationDynamics(Settings *settings) {
 	FwStochXYPropResultStruct cases;
 	Stoch_HMcN(_x_indep, _y_indep, cases);
 
-	if ( _user_init_start_pop) {	 
-		sprintf_s(_filename_fw_pd , "%s_populationdynamics_FW.bin", settings->GetFilePrefixFW());
-		if ( !LoadFwFromFile(_filename_fw_pd) ) {
-			printf("Error loading forward results");
-			exit(-1);
-		}
-		else {			
-			printf("Forward::ComputePopulationDynamics() loaded initial start population from file\n");
-			FW_props = _FW_props;
-		}
-	}	
-	else {
-		for (unsigned int xi=0; xi<_xi_max; xi++) {
-			for (unsigned int yi=0; yi<_yi_max; yi++) {
-				FW_props(cases.x_grid[xi],cases.y_grid[yi],0,0,_start_loc_fw-1,0,_start_week_fw) += cases.x_prop[xi]*cases.y_prop[yi];
-			}}
+	for (unsigned int xi=0; xi<_xi_max; xi++) {
+		for (unsigned int yi=0; yi<_yi_max; yi++) {
+			FW_props(cases.x_grid[xi],cases.y_grid[yi],0,0,_start_loc_fw-1,0,_start_week_fw) += cases.x_prop[xi]*cases.y_prop[yi];
+		}}
 
-	} 
+
 	//-------------------------------------------
+	
 	printf("\n");
 
 	double lambda_old_fw = 0;
 	double dlambda_fw = 999;
 	unsigned int year=0; 
-	unsigned int t_start_week = _start_week_fw;
-
-	if (_user_init_start_pop)
-		t_start_week = 0;	
-
 
 	bool errorInSimulation = false; // Quick exit of loops due to 'no more living' or 'exponential growth'
 
 	while ((!convergence && year<_n_fw) || year<_n_min_fw)
 	{	
+
 		FW_old = FW_props;
 
-		for (unsigned int t=t_start_week;t<_t_cnt;t++) {
+		for (unsigned int t=0;t<_t_cnt;t++) {
 
-				// reset t+1 values to zero 
+			if (year > 0 || t >= _start_week_fw)
+			{
+				// reset t+1 values to zero
 				for (unsigned int x=0;x<_x_cnt;x++) {
 					for (unsigned int y=0;y<_y_cnt;y++) {
 						for (unsigned int e=0;e<_e_cnt;e++) {
@@ -818,7 +780,7 @@ double Forward::ComputePopulationDynamics(Settings *settings) {
 														// migrate
 
 														if (strat == 'm') {
-															Stoch_HMcN(X_m(_x_vec[x], e, 0, o, s, u_opt, t), Y_m(_x_vec[x], _y_vec[y], o, s, u_opt, t), cases);
+															Stoch_HMcN(X_m(_x_vec[x], e, 0, o, s, u_opt, t), Y_m(_x_vec[x], _y_vec[y], e, o, s, u_opt, t), cases);
 
 															if (s < (_s_cnt-1)) {
 																for (unsigned int xi=0; xi<_xi_max; xi++) {
@@ -846,10 +808,7 @@ double Forward::ComputePopulationDynamics(Settings *settings) {
 
 									}}}}}} // end loop over states
 
-			} // end loop over weeks
-
-		// The years following the first one (which starts at t_start_week) will start at week zero:
-		t_start_week = 0;
+			}} // end loop over weeks
 
 		// calculate lambda & check convergence
 
@@ -860,30 +819,25 @@ double Forward::ComputePopulationDynamics(Settings *settings) {
 		lambda_state = _conv.lambda_fw_state;
 		if (convergence) {
 			_conv.fw_year_conv = year;
-		}			
+		}	
 
-//		printf("=========== Forward iteration %2d done,  Lambda Fwd = %.4f\n\n", year, lambda_state);		
+//		printf("=========== Forward iteration %2d done,  Lambda Fwd = %.4f\n\n", year, lambda_state);
+
 
 		printf("=========== Forward iteration %2d  done ===========\n",year);	 
 		printf("........... Lambda:  average = %f   specific state = %f\n",_conv.lambda_fw_average,_conv.lambda_fw_state);
 		printf("........... Lambda:  worst   = %f   not converged %d of %d \n", _conv.lambda_fw_worst,_conv.fw_notconv_count,_conv.fw_state_count );
 		printf("\n");
 
-		// store/overwrite results
-		_FW_props = FW_props;		
-
-		if (_user_init_start_pop) {
-			sprintf_s(_filename_fw_pd_year , "%s_populationdynamics_FW_%2d.bin", settings->GetFilePrefixFW(),year);
-			SavePopulationDynamics(_filename_fw_pd_year);
-		}
-
 		dlambda_fw    = fabs(lambda-lambda_old_fw);
 		lambda_old_fw = lambda;
 		year++;
 
 		// } // end loop over years
-	} // end while loop over years and dlambda    
+	} // end while loop over years and dlambda             
 
+	// store results
+	_FW_props = FW_props;
 	return (lambda);
 
 }

@@ -59,7 +59,6 @@ private:
 	/// @{ 
 	bool     _run_forward;         ///< Run forward simulation
 	bool     _run_backward;        ///< Run backward simulation
-	bool     _user_init_start_pop; ///< User-defined initialization of start population NEW
 	bool     _enable_migration;    ///< Enable migration option
 	bool     _enable_health_dim;   ///< Enable health dimension
 	bool     _calibrate_theta;     ///< Backward calibrate theta
@@ -102,10 +101,10 @@ private:
 
 	unsigned int    _migr_dur;    ///< Duration of migration
 	double _m_migr;               ///< Predation risk during migration per decision epoch
-	double _dres_migr_act;        ///< Reserve costs of active flight
-	double _dres_migr_pas;        ///< Reserve costs of passive flight
-	double _dcond_migr_act;       ///< Health costs of active flight
-	double _dcond_migr_pas;       ///< Health costs of passive flight
+	FuncType _dres_migr_act;        ///< Reserve costs of active flight
+	FuncType _dres_migr_pas;        ///< Reserve costs of passive flight
+	FuncType _dcond_migr_act;       ///< Health costs of active flight
+	FuncType _dcond_migr_pas;       ///< Health costs of passive flight
 
 	double _p_active_flight_const;  ///< Probability of active flight  (if no CSV array is given)
 
@@ -131,6 +130,7 @@ private:
 
 	FuncType _migr_act_x_func;        ///< Reserve dependency of active flight
 	FuncType _migr_pas_x_func;        ///< Reserve dependency of passive flight
+	
 
 	char _file_prefix[512];           ///< File prefix for output of backward iteration
 
@@ -193,7 +193,6 @@ public:
 	
 	/// \name Setters
 	/// @{ 
-	void SetUserInitStartPop(bool userinitstartpop)  { _user_init_start_pop; } 
 	void SetN(unsigned int n)			{ _n = n; }                 ///< Set number of years for backward computation
 	void SetNMin(unsigned int nmin)     { _n_min = nmin; }
     void SetNFW(unsigned int n)		    { _n_fw = n; }              ///< Set number of years for forward computation
@@ -226,10 +225,10 @@ public:
 
     void SetMigrDur(unsigned int migrDur)     { _migr_dur = migrDur; ComputeDependentParameters(); }
 	void SetMMigr(double mMigr)               { _m_migr = mMigr; }
-	void SetDResMigrAct(double dResMigrAct)   { _dres_migr_act = dResMigrAct; }
-	void SetDResMigrPas(double dResMigrPas)   { _dres_migr_pas = dResMigrPas; }
-	void SetDCondMigrAct(double dCondMigrAct) { _dcond_migr_act = dCondMigrAct; }
-	void SetDCondMigrPas(double dCondMigrPas) { _dcond_migr_pas = dCondMigrPas; }
+	//void SetDResMigrAct(double dResMigrAct)   { _dres_migr_act = dResMigrAct; }
+	//void SetDResMigrPas(double dResMigrPas)   { _dres_migr_pas = dResMigrPas; }
+	//void SetDCondMigrAct(double dCondMigrAct) { _dcond_migr_act = dCondMigrAct; }
+	//void SetDCondMigrPas(double dCondMigrPas) { _dcond_migr_pas = dCondMigrPas; }
 
 	void SetPActiveFlightConst(double pActiveFlightConst) { _p_active_flight_const = pActiveFlightConst; }
 	void SetPActiveFlight(NArray<double> pActiveFlight) { _p_active_flight = pActiveFlight;}
@@ -258,7 +257,6 @@ public:
 	/// @{ 
 	bool   GetRunForward()		      { return _run_forward;  }
 	bool   GetRunBackward()		      { return _run_backward; }
-	bool   GetUserInitStartPop()      { return _user_init_start_pop; } 
 	bool   GetEnableMigration()       { return _enable_migration; }
 	bool   GetEnableHealthDim()       { return _enable_health_dim; }
 
@@ -268,11 +266,12 @@ public:
 	bool   GetCalibrateTheta()        { return _calibrate_theta; }
 	double GetCalibrationThetaMin()   { return _calibrate_theta_min; }
 
-    unsigned int GetNFW()			   { return _n_fw; }
-	unsigned int GetNMinFW()		   { return _n_min_fw; }	
-	char        *GetFilePrefixFW()	   { return _file_prefix_fw; }
-    unsigned int GetStartWeekFW()      { return _start_week_fw; }
-	unsigned int GetStartLocationFW()  { return _start_loc_fw; }
+
+    unsigned int GetNFW()			  { return _n_fw; }
+	unsigned int GetNMinFW()		  { return _n_min_fw; }	
+	char        *GetFilePrefixFW()	  { return _file_prefix_fw; }
+    unsigned int GetStartWeekFW()     { return _start_week_fw; }
+	unsigned int GetStartLocationFW() { return _start_loc_fw; }
 
     unsigned int GetTCnt()		{ return _t_cnt; }
 	unsigned int GetGridX()		{ return _grid_x; }
@@ -314,10 +313,10 @@ public:
 
 	unsigned int GetMigrDur()   { return _migr_dur; }
 	double  GetMMigr()          { return _m_migr; }
-	double  GetdResMigrAct()    { return _dres_migr_act; }
-	double  GetdResMigrPas()    { return _dres_migr_pas; }
-	double  GetdCondMigrAct()   { return _dcond_migr_act; }
-	double  GetdCondMigrPas()   { return _dcond_migr_pas; }
+	//double  GetdResMigrAct()    { return _dres_migr_act; }
+	//double  GetdResMigrPas()    { return _dres_migr_pas; }
+	//double  GetdCondMigrAct()   { return _dcond_migr_act; }
+	//double  GetdCondMigrPas()   { return _dcond_migr_pas; }
 
 	NArray<double> GetEps()   { return _eps; }
 	NArray<double> GetABar()  { return _a_bar; }
@@ -346,6 +345,10 @@ public:
 	FuncType & DFunc()			{ return _d_func; }
 	FuncType & MigActFuncX()    { return _migr_act_x_func; } 
 	FuncType & MigPasFuncX()    { return _migr_pas_x_func; } 	
+	FuncType  & DResMigrAct()   { return _dres_migr_act; }
+	FuncType  & DResMigrPas()   { return _dres_migr_pas; }
+	FuncType  & DCondMigrAct()  { return _dcond_migr_act; }
+	FuncType  & DCondMigrPas()  { return _dcond_migr_pas; }	
 	///@} End of group started by \name
 };
 

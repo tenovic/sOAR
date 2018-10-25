@@ -156,7 +156,7 @@ double StateFuncs::X_s (double x, int e, int a, int o, double u, int t) {
 double StateFuncs::X_m (double x, int e, int a, int o, int s, double u, int t) {
 	double p_act = P_active_flight(o,s,t);
 
-	return(Chop(x - ( p_act * _dres_migr_act * (1 + _migr_act_x_func(x)) + (1-p_act) * _dres_migr_pas * (1 + _migr_pas_x_func(x)) ) , _x_min, _x_max));
+	return(Chop(x - ( p_act * (_dres_migr_act(e-_e_max)) * (1 + _migr_act_x_func(x)) + (1-p_act) * (_dres_migr_pas(e-_e_max)) * (1 + _migr_pas_x_func(x)) ) , _x_min, _x_max));
 }
 
 double StateFuncs::Y_s (double x, double y, double u, int t) {
@@ -167,9 +167,9 @@ double StateFuncs::Y_ns (double x, double y, double u, int t) {
     return(Chop(y + Alpha(C_u(x,_x_max,u)), _y_min, _y_max));
 }
 
-double StateFuncs::Y_m (double x, double y, int o, int s, double u, int t) {	
+double StateFuncs::Y_m (double x, double y, int e, int o, int s, double u, int t) {	
 	double p_act = P_active_flight(o,s,t);
-	return(Chop(y - ( p_act * _dcond_migr_act + (1-p_act) * _dcond_migr_pas ) , _y_min, _y_max));
+	return(Chop(y - ( p_act * _dcond_migr_act(e-_e_max) + (1-p_act) * _dcond_migr_pas(e-_e_max) ) , _y_min, _y_max));
 
 }
 
@@ -201,10 +201,10 @@ void StateFuncs::InitStateFuncs(Settings *settings, double theta) {
 	_t_max            = settings->GetTCnt();
 
 	_m_migr           = settings->GetMMigr();
-	_dres_migr_act    = settings->GetdResMigrAct();
-	_dres_migr_pas    = settings->GetdResMigrPas();
-	_dcond_migr_act   = settings->GetdCondMigrAct();
-	_dcond_migr_pas   = settings->GetdCondMigrPas();
+	_dres_migr_act    = settings->DResMigrAct();
+	_dres_migr_pas    = settings->DResMigrPas();
+	_dcond_migr_act   = settings->DCondMigrAct();
+	_dcond_migr_pas   = settings->DCondMigrPas();
 	
     _delta_res_start  = settings->GetDeltaResStart();
     _delta_cond_start = settings->GetDeltaCondStart();
