@@ -292,15 +292,6 @@ public:
 
 
 		if (_settings->GetRunForward() ) {
-
-			//// --------- NEW (start) -----------------------------
-			//if ( _settings->GetUserInitStartPop() ) {	
-			//	if ( !_decision->LoadFromFile(_filename_bw_dec) ) {	 
-			//	exit(-1); 
-			//	}	
-			//}	
-			//// --------- NEW (end) -------------------------------
-
 			printf("########## Running Forward::Compute()\n");
 
 			NanoTimer timerTotal;
@@ -313,13 +304,7 @@ public:
 		
 			{
 				lambda = fwOpt.ComputePopulationDynamics( _settings);  // cf. Toekoelyi
-				if (_settings->GetUserInitStartPop()) {
-					sprintf_s(_filename_fw_pd, "%s_populationdynamics_FW_finalYear.bin", _settings->GetFilePrefixFW());
-					fwOpt.SavePopulationDynamics(_filename_fw_pd);
-				}
-				else {
-					fwOpt.SavePopulationDynamics(_filename_fw_pd);
-				}
+				fwOpt.SavePopulationDynamics(_filename_fw_pd);
 			}
 
 
