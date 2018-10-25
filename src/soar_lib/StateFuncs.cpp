@@ -80,7 +80,7 @@ double StateFuncs::GammaBrood(int a) {
 // U_crit
 double StateFuncs::U_crit(int e, int a, int o, int t) {
     if (_theta > 0)
-        return( GammaBrood(a) * pow(_theta,(int)(e-_e_max)) / (Gamma(e,o,1,t) / pow(_theta,(int)(_e_max-e))));
+        return( GammaBrood(a) * pow(_theta,e-(int)_e_max) / (Gamma(e,o,1,t) / pow(_theta,(int)(_e_max-e))));
     else return (2);
 }
 
@@ -156,7 +156,7 @@ double StateFuncs::X_s (double x, int e, int a, int o, double u, int t) {
 double StateFuncs::X_m (double x, int e, int a, int o, int s, double u, int t) {
 	double p_act = P_active_flight(o,s,t);
 
-	return(Chop(x - ( p_act * (_dres_migr_act(e-_e_max)) * (1 + _migr_act_x_func(x)) + (1-p_act) * (_dres_migr_pas(e-_e_max)) * (1 + _migr_pas_x_func(x)) ) , _x_min, _x_max));
+	return(Chop(x - ( p_act * (_dres_migr_act( e-(double)_e_max)) * (1 + _migr_act_x_func(x)) + (1-p_act) * (_dres_migr_pas(e-(double)_e_max)) * (1 + _migr_pas_x_func(x)) ) , _x_min, _x_max));
 }
 
 double StateFuncs::Y_s (double x, double y, double u, int t) {
@@ -169,7 +169,7 @@ double StateFuncs::Y_ns (double x, double y, double u, int t) {
 
 double StateFuncs::Y_m (double x, double y, int e, int o, int s, double u, int t) {	
 	double p_act = P_active_flight(o,s,t);
-	return(Chop(y - ( p_act * _dcond_migr_act(e-_e_max) + (1-p_act) * _dcond_migr_pas(e-_e_max) ) , _y_min, _y_max));
+	return(Chop(y - ( p_act * _dcond_migr_act(e-(double)_e_max) + (1-p_act) * _dcond_migr_pas(e-(double)_e_max) ) , _y_min, _y_max));
 
 }
 
